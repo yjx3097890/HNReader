@@ -27,20 +27,32 @@
 /// THE SOFTWARE.
 
 import SwiftUI
+import Combine
 
 struct ReaderView: View {
-  var model: ReaderViewModel
-  var presentingSettingsSheet = false
+  @ObservedObject var model: ReaderViewModel
+  @State var presentingSettingsSheet = false
 
-  var currentDate = Date()
+  @State var currentDate = Date()
+    
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    @EnvironmentObject var settings: Settings
+    private let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect().eraseToAnyPublisher()
   
   init(model: ReaderViewModel) {
     self.model = model
   }
+    
   
   var body: some View {
-    let filter = "Showing all stories"
-    
+    var filter:String {
+        if settings.keywords.isEmpty {
+            return  "Showing all stories"
+        } else {
+            return "Filters: " + settings.keywords.map(\.value).joined(separator: ", ")
+        }
+       
+    }
     return NavigationView {
       List {
         Section(header: Text(filter).padding(.leading, -10)) {
@@ -58,21 +70,28 @@ struct ReaderView: View {
                 print(story)
               }
               .font(.subheadline)
-              .foregroundColor(Color.blue)
+              .foregroundColor(colorScheme == .light ? Color.blue: .orange)
               .padding(.top, 6)
             }
             .padding()
           }
-          // Add timer here
+          // Add timer
+          .onReceive(timer, perform: {
+            self.currentDate = $0
+          })
         }.padding()
+      }.sheet(isPresented: self.$presentingSettingsSheet, content: {
+        SettingsView()//.environmentObject(self.settings)
+      })
+      // Display errors
+      .alert(item: self.$model.error) { error in
+        Alert(title: Text("Network Error"), message: Text(error.localizedDescription), dismissButton: .cancel())
       }
-      // Present the Settings sheet here
-      // Display errors here
       .navigationBarTitle(Text("\(self.model.stories.count) Stories"))
       .navigationBarItems(trailing:
         Button("Settings") {
           // Set presentingSettingsSheet to true here
-          
+            self.presentingSettingsSheet = true
         }
       )
     }

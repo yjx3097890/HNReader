@@ -76,9 +76,9 @@ struct API {
   func story(id: Int) -> AnyPublisher<Story, Error> {
     URLSession.shared.dataTaskPublisher(for: EndPoint.story(id).url)
       .receive(on: apiQueue)
-      .map { $0.0 }
+        .map(\.data)
       .decode(type: Story.self, decoder: decoder)
-      .catch { _ in Empty() }
+      .catch { _ in Empty<Story, Error>() }
       .eraseToAnyPublisher()
   }
   
@@ -105,7 +105,7 @@ struct API {
   
   func stories() -> AnyPublisher<[Story], Error> {
     URLSession.shared.dataTaskPublisher(for: EndPoint.stories.url)
-      .map { $0.0 }
+        .map(\.data)
       .decode(type: [Int].self, decoder: decoder)
       .mapError { error -> Error in
         switch error {

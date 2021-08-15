@@ -28,8 +28,12 @@
 
 import Foundation
 
-final class Settings {
-  init() { }
+final class Settings: ObservableObject {
+  init() {
+    if let keywords: [FilterKeyword] = try? JSONFile.loadValue(named: "keywords") {
+        self.keywords = keywords
+    }
+  }
   
-  var keywords = [FilterKeyword]()
+  @Published var keywords = [FilterKeyword]()
 }
